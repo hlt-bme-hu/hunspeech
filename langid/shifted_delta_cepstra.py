@@ -8,11 +8,10 @@ from sklearn.cluster import KMeans, AffinityPropagation, MeanShift, SpectralClus
 from sklearn.mixture import GMM
 from features import mfcc
 
-# TODO
 """
-AffinityPropagation and SpectralClustering take similarity matrices.  These
-can be obtained from the functions in the sklearn.metrics.pairwise module
-"""
+    AffinityPropagation is not used, because its time complexity is quadratic
+    in the number of samples.
+    """
 
 def get_logger():
     logger = logging.getLogger()
@@ -34,8 +33,7 @@ class ShiftedDeltaClusterer():
         self.algos = [
             ("KMeans++", KMeans(n_clusters=n_clusters, init='k-means++', n_jobs=n_jobs)),
             ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random', n_jobs=n_jobs)),
-            # "TODO", TODO KMeans(n_clusters=n_clusters, init='PCA', n_jobs=n_jobs)
-            ("AffinityPropagation", AffinityPropagation()),
+            # TODO KMeans(n_clusters=n_clusters, init='PCA', n_jobs=n_jobs)
             ("MeanShift", MeanShift()),
             ("SpectralClustering", SpectralClustering(n_clusters=n_clusters)),
             # AgglomerativeClustering:
@@ -45,7 +43,7 @@ class ShiftedDeltaClusterer():
             ("AgglomerativeClustering-avg", AgglomerativeClustering(n_clusters=n_clusters, linkage='average')),
             ("DBSCAN", DBSCAN()),
             ("GMM", GMM(n_components=1)),
-            # "covariance", covariance_type=
+            # "covariance", covariance_type= 
             #    'spherical', 'tied', 'diag', 'full'
             ("Birch", Birch(n_clusters=n_clusters)) # TODO n_clusters kell neki?
         ]
@@ -96,7 +94,7 @@ class ShiftedDeltaClusterer():
                 logger.info('Assigning {} by {}'.format(wav_fn,algo_name))
                 assign = classer.predict(self.shifted_delta_cepstra(
                     '{}/{}'.format(self.wav_dir, wav_fn)))
-                np.savetxt(track_to_clust_fn, assign)
+                np.savetxt(track_to_clust_fn, assign, fmt='%i')
 
     def get_classer(self, algo_name, classer, algo_dir):
         if not os.path.exists(algo_dir):
