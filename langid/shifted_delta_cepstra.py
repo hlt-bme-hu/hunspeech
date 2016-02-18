@@ -34,14 +34,21 @@ class ShiftedDeltaClusterer():
             ("KMeans++", KMeans(n_clusters=n_clusters, init='k-means++', n_jobs=n_jobs)),
             ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random', n_jobs=n_jobs)),
             # TODO KMeans(n_clusters=n_clusters, init='PCA', n_jobs=n_jobs)
-            ("MeanShift", MeanShift()),
-            ("SpectralClustering", SpectralClustering(n_clusters=n_clusters)),
+            # TODO: MeanShift, SpectralClustering, AgglomerativeClustering
+            #("MeanShift", MeanShift()),
+            #("SpectralClustering", SpectralClustering(n_clusters=n_clusters)),
             # AgglomerativeClustering:
             #     "linkage" determines the metric used for the merge strategy
-            ("AgglomerativeClustering-ward", AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')),
-            ("AgglomerativeClustering-compl", AgglomerativeClustering(n_clusters=n_clusters, linkage='complete')),
-            ("AgglomerativeClustering-avg", AgglomerativeClustering(n_clusters=n_clusters, linkage='average')),
-            ("DBSCAN", DBSCAN()),
+            #     AgglomerativeClustering can also scale to large number of
+            #     samples when it is used jointly with a connectivity matrix,
+            #     but is computationally expensive when no connectivity
+            #     constraints are added between samples: it considers at each
+            #     step all the possible merges.
+            #("AgglomerativeClustering-ward", AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')),
+            #("AgglomerativeClustering-compl", AgglomerativeClustering(n_clusters=n_clusters, linkage='complete')),
+            #("AgglomerativeClustering-avg", AgglomerativeClustering(n_clusters=n_clusters, linkage='average')),
+            #("DBSCAN", DBSCAN()),
+            # TODO DBSCAN' object has no attribute 'predict
             ("GMM", GMM(n_components=1)),
             # "covariance", covariance_type= 
             #    'spherical', 'tied', 'diag', 'full'
