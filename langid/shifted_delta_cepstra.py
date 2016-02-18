@@ -52,7 +52,10 @@ class ShiftedDeltaClusterer():
             ("GMM", GMM(n_components=1)),
             # "covariance", covariance_type= 
             #    'spherical', 'tied', 'diag', 'full'
-            ("Birch", Birch(n_clusters=n_clusters)) # TODO n_clusters kell neki?
+            ("Birch", Birch(n_clusters=n_clusters)) 
+            # TODO 
+            #   n_clusters kell neki?
+            #   MemoryError
         ]
 
     def get_sdc_all_tracks(self):
