@@ -90,7 +90,7 @@ class ShiftedDeltaClusterer():
         """
         (rate,sig) = wav.read(wav_fn)
         features = mfcc(sig,rate)
-        logger.debug('Cepstral data of shape {} read from in {}'.format(
+        logger.debug('Cepstral data of shape {} read from {}'.format(
             features.shape, wav_fn))
         # TODO include original cepstra as well?
         features = features[delta:] - features[:-delta]
