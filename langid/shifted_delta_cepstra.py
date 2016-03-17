@@ -8,18 +8,11 @@ from sklearn.cluster import KMeans, AffinityPropagation, MeanShift, SpectralClus
 from sklearn.mixture import GMM
 from features import mfcc
 
-"""
-    AffinityPropagation is not used, because its time complexity is quadratic
-    in the number of samples.
-    """
 
 def get_logger():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-    #if log_to_err
     handler = logging.StreamHandler()
-    # else log_fn = "~/l" if os.path.isfile(log_fn): os.remove(log_fn) handler
-    # = logging.FileHandler(log_fn)
     handler.setFormatter(logging.Formatter(
         "%(asctime)s %(module)s (%(lineno)s) %(levelname)s %(message)s"))
     logger.addHandler(handler)
@@ -28,8 +21,13 @@ def get_logger():
 
 class ShiftedDeltaClusterer():
     def __init__(self,n_clusters=6, n_jobs=8):
+        """
+        This script tries many clustering algorithms by sklearn.
+        AffinityPropagation is not used, because its time complexity is
+        quadratic in the number of samples.
+        """
         self.wav_dir = '/mnt/store/hlt/Speech/Jewels/wav/'
-        self.project_dir = '/mnt/store/makrai/data/speech/jewel'
+        self.project_dir = '/mnt/store/makrai/data/unsorted/speech/jewel'
         self.algos = [
             ("KMeans++", KMeans(n_clusters=n_clusters, init='k-means++', n_jobs=n_jobs)),
             ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random', n_jobs=n_jobs)),
@@ -60,7 +58,7 @@ class ShiftedDeltaClusterer():
 
     def get_sdc_all_tracks(self):
         data_fn = '{}/{}'.format(self.project_dir, 'sdc_all_jewel.npy')
-        if os.path.isfile(data_fn):
+        if False and os.path.isfile(data_fn):
             self.sdc_all_speech = np.load(open(data_fn))
         else:
             logger.info(
@@ -76,17 +74,24 @@ class ShiftedDeltaClusterer():
         :param delta: represents the time advance and delay for the delta computation,
         :param k_conc: is the number of blocks whose delta coefficients are concatenated
         :param shift: is the time shift between consecutive blocks
+
+        Shifted delta cepstra are feature vectors created by stacking delta
+        cepstra computed across multiple speech frames.
         See the paper
             PA Torres-Carrasquillo et al (2002)
             Approaches to language identification using Gaussian mixture models
                 and shifted delta cepstral features.
+
+        len(mfcc) == 39 == 3 * (12 cepstral + 1 energy)
         """
         (rate,sig) = wav.read(wav_fn)
         features = mfcc(sig,rate)
+        logger.debug('shape of mfcc data: {}'.format(features.shape))
+        # TODO include original cepstra as well?
         features = features[delta:] - features[:-delta]
-        shifted = np.zeros((features.shape[0]-shift*k_conc, features.shape[1]))
+        shifted = np.zeros((features.shape[0]-shift*k_conc, k_conc * features.shape[1]))
         for i in xrange(shifted.shape[0]):
-            shifted[i] = features[i:i+k_conc:shift]
+            shifted[i,:] = features[i:i+k_conc*shift:shift,:].reshape((1,-1))
         return shifted
 
     def cluster(self):
@@ -112,11 +117,12 @@ class ShiftedDeltaClusterer():
         dump_fn = '{}/{}.npy'.format(algo_dir, algo_name)
         if os.path.isfile(dump_fn):
             return pickle.load(open(dump_fn, mode='rb'))
-        logger.info('clustering all speech with {}'.format(algo_name))
-        classer.fit(self.sdc_all_speech)
-        logger.info('dumping classifier')
-        pickle.dump(classer, open(dump_fn, mode='wb'))
-        return classer
+        else:
+            logger.info('clustering all speech with {}'.format(algo_name))
+            classer.fit(self.sdc_all_speech)
+            logger.info('dumping classifier')
+            pickle.dump(classer, open(dump_fn, mode='wb'))
+            return classer
 
     def main(self):
         self.get_sdc_all_tracks()
