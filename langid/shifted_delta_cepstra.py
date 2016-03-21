@@ -1,10 +1,11 @@
 import logging
+from math import log
 import os
 import pickle
 
 import numpy as np
 import scipy.io.wavfile as wav
-from sklearn.cluster import KMeans, AffinityPropagation, MeanShift, SpectralClustering, AgglomerativeClustering, DBSCAN, Birch
+from sklearn.cluster import KMeans, AffinityPropagation, MeanShift, SpectralClustering, AgglomerativeClustering, DBSCAN, Birch, estimate_bandwidth
 from sklearn.mixture import GMM
 from sklearn.manifold import TSNE
 from features import mfcc
@@ -21,7 +22,7 @@ def get_logger():
 
 
 class ShiftedDeltaClusterer():
-    def __init__(self,n_clusters=6, n_jobs=8):
+    def __init__(self,n_clusters=6, n_jobs=-1):
         """
         Cluster speech frames by language, based on shifted delta cepstral
         features.  Many clustering algorithms by sklearn are tried.
@@ -57,23 +58,27 @@ class ShiftedDeltaClusterer():
         self.wav_dir = os.path.join(homes, 'hlt/Speech/Jewels/wav/')
         self.project_dir = os.path.join(homes,
                                         'makrai/data/unsorted/speech/jewel')
+        n_comp = 1 # GMM
         self.algos = [
             ("KMeans++", KMeans(n_clusters=n_clusters, init='k-means++', n_jobs=n_jobs)),
             ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random', n_jobs=n_jobs)),
             # TODO try preprocessing by PCA before KMeans
-            ("MeanShift", MeanShift(n_jobs=n_jobs)),
+            ("MeanShift", MeanShift(n_jobs=n_jobs, bandwidth=56.3255)), 
+            #   bandwidth estimated from points :16384 TODO
             ("SpectralClustering", SpectralClustering(n_clusters=n_clusters)),
-            #("AgglomerativeClustering-ward", AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')),
-            #("AgglomerativeClustering-compl", AgglomerativeClustering(n_clusters=n_clusters, linkage='complete')),
-            #("AgglomerativeClustering-avg", AgglomerativeClustering(n_clusters=n_clusters, linkage='average')),
+            # TODO
+            #   ("AgglomerativeClustering-ward", AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')),
+            #   ("AgglomerativeClustering-compl", AgglomerativeClustering(n_clusters=n_clusters, linkage='complete')),
+            #   ("AgglomerativeClustering-avg", AgglomerativeClustering(n_clusters=n_clusters, linkage='average')),
             ("DBSCAN", DBSCAN()),
-            #   TODO algorithm : {‘auto’, ‘ball_tree’, ‘kd_tree’, ‘brute’}, optional
+            #   algorithm : {'auto', 'ball_tree', 'kd_tree', 'brute'}, optional
             #       The algorithm to be used to find nearest neighbors
-            #   has no attribute 'predict but has fit_pr
-            #("GMM", GMM(n_components=1)), 
-            #   "covariance", 
-            #   covariance_type= 'spherical', 'tied', 'diag', 'full'
-            #("Birch", Birch(n_clusters=n_clusters)), TODO 
+            #   has no attribute 'predict but has fit_predict
+            ("GMM-spherical", GMM(n_components=n_comp, covariance_type='spherical')),
+            ("GMM-tied", GMM(n_components=n_comp, covariance_type='tied')),
+            ("GMM-diag", GMM(n_components=n_comp, covariance_type='diag')),
+            ("GMM-full", GMM(n_components=n_comp, covariance_type='full')),
+            # ("Birch", Birch(n_clusters=n_clusters)), # TODO
             #   n_clusters kell neki?
             #   MemoryError
             #("TSNE", TSNE())
@@ -146,7 +151,13 @@ class ShiftedDeltaClusterer():
             return pickle.load(open(classer_fn, mode='rb'))
         else:
             logger.info('clustering all speech with {}'.format(algo_name))
-            if hasattr(classer, 'fit_transform'):
+            if False and algo_name == 'MeanShift':
+                len_ = 4
+                while  len_ < self.sdc_all_speech.shape[0]:
+                    logging.info((len_,
+                                  estimate_bandwidth(self.sdc_all_speech[:len_])))
+                    len_ *= 2
+            elif hasattr(classer, 'fit_transform'):
                 all_speech_trafoed = classer.fit_transform(self.sdc_all_speech)
                 np.save(open(trafoed_fn, mode='wb'), all_speech_trafoed)
             elif hasattr(classer, 'fit'):
