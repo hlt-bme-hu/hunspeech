@@ -27,8 +27,10 @@ class ShiftedDeltaClusterer():
         AffinityPropagation is not used, because its time complexity is
         quadratic in the number of samples.
         """
-        self.wav_dir = '/mnt/store/hlt/Speech/Jewels/wav/'
-        self.project_dir = '/mnt/store/makrai/data/unsorted/speech/jewel'
+        homes = '/home' if True else '/mnt/store'
+        self.wav_dir = os.path.join(homes, 'hlt/Speech/Jewels/wav/')
+        self.project_dir = os.path.join(homes,
+                                        'makrai/data/unsorted/speech/jewel')
         self.algos = [
             ("KMeans++", KMeans(n_clusters=n_clusters, init='k-means++', n_jobs=n_jobs)),
             ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random', n_jobs=n_jobs)),
