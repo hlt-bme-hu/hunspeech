@@ -23,9 +23,35 @@ def get_logger():
 class ShiftedDeltaClusterer():
     def __init__(self,n_clusters=6, n_jobs=8):
         """
-        This script tries many clustering algorithms by sklearn.
-        AffinityPropagation is not used, because its time complexity is
-        quadratic in the number of samples.
+        Cluster speech frames by language, based on shifted delta cepstral
+        features.  Many clustering algorithms by sklearn are tried.
+
+        AffinityPropagation 
+            not used, because its time complexity is quadratic in the number
+            of samples.
+        MeanShift
+            idea
+                the mean shift vector is computed for each centroid and points
+                towards a region of the maximum increase in the density 
+            complexity 
+                O(T*n*log(n)) in lower dimensions, with n the number of
+                samples and T the number of points. In higher dimensions the
+                complexity will tend towards O(T*n^2).  
+            Scalability can be boosted by using fewer seeds, 
+                for example by using a higher value of min_bin_freq in the
+                get_bin_seeds function.  
+            Note that the estimate_bandwidth function is much less scalable
+                than the mean shift algorithm and will be the bottleneck if it
+                is used.
+        AgglomerativeClustering:
+            "linkage" determines the metric used for the merge strategy
+            scalability
+                scalable, when when it is used jointly with a connectivity
+                matrix, but is computationally expensive when no connectivity
+                constraints are added between samples: it considers at each
+                step all the possible merges.
+        TSNE
+            perplexity http://lvdmaaten.github.io/tsne/
         """
         homes = '/home' if True else '/mnt/store'
         self.wav_dir = os.path.join(homes, 'hlt/Speech/Jewels/wav/')
@@ -34,32 +60,23 @@ class ShiftedDeltaClusterer():
         self.algos = [
             ("KMeans++", KMeans(n_clusters=n_clusters, init='k-means++', n_jobs=n_jobs)),
             ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random', n_jobs=n_jobs)),
-            # TODO          KMeans(n_clusters=n_clusters, init='PCA', n_jobs=n_jobs)
-            # TODO: MeanShift, SpectralClustering, AgglomerativeClustering
-            #("MeanShift", MeanShift()),
-            #("SpectralClustering", SpectralClustering(n_clusters=n_clusters)),
-            # AgglomerativeClustering:
-            #     "linkage" determines the metric used for the merge strategy
-            #     AgglomerativeClustering can also scale to large number of
-            #     samples when it is used jointly with a connectivity matrix,
-            #     but is computationally expensive when no connectivity
-            #     constraints are added between samples: it considers at each
-            #     step all the possible merges.
+            # TODO try preprocessing by PCA before KMeans
+            ("MeanShift", MeanShift(n_jobs=n_jobs)),
+            ("SpectralClustering", SpectralClustering(n_clusters=n_clusters)),
             #("AgglomerativeClustering-ward", AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')),
             #("AgglomerativeClustering-compl", AgglomerativeClustering(n_clusters=n_clusters, linkage='complete')),
             #("AgglomerativeClustering-avg", AgglomerativeClustering(n_clusters=n_clusters, linkage='average')),
-            #("DBSCAN", DBSCAN()),
-            # TODO DBSCAN' object has no attribute 'predict
-            #("GMM", GMM(n_components=1)),
-            # "covariance", covariance_type= 
-            #    'spherical', 'tied', 'diag', 'full'
-            ("Birch", Birch(n_clusters=n_clusters)),
-            # TODO 
+            ("DBSCAN", DBSCAN()),
+            #   TODO algorithm : {‘auto’, ‘ball_tree’, ‘kd_tree’, ‘brute’}, optional
+            #       The algorithm to be used to find nearest neighbors
+            #   has no attribute 'predict but has fit_pr
+            #("GMM", GMM(n_components=1)), 
+            #   "covariance", 
+            #   covariance_type= 'spherical', 'tied', 'diag', 'full'
+            #("Birch", Birch(n_clusters=n_clusters)), TODO 
             #   n_clusters kell neki?
             #   MemoryError
-            # sklearn.manifold.TSNE
-            #   perplexity http://lvdmaaten.github.io/tsne/
-            ("TSNE", TSNE())
+            #("TSNE", TSNE())
         ]
 
     def get_sdc_all_tracks(self):
@@ -92,7 +109,7 @@ class ShiftedDeltaClusterer():
         """
         (rate,sig) = wav.read(wav_fn)
         features = mfcc(sig,rate)
-        logger.debug('Cepstral data of shape {} read from in {}'.format(
+        logger.debug('Cepstral data of shape {} read from {}'.format(
             features.shape, wav_fn))
         # TODO include original cepstra as well?
         features = features[delta:] - features[:-delta]
@@ -132,8 +149,11 @@ class ShiftedDeltaClusterer():
             if hasattr(classer, 'fit_transform'):
                 all_speech_trafoed = classer.fit_transform(self.sdc_all_speech)
                 np.save(open(trafoed_fn, mode='wb'), all_speech_trafoed)
-            else:
+            elif hasattr(classer, 'fit'):
                 classer.fit(self.sdc_all_speech)
+            else:
+                classer.fit_predict(self.sdc_all_speech)
+            logger.info(classer.get_params())
             logger.info('dumping classifier')
             pickle.dump(classer, open(classer_fn, mode='wb'))
             return classer
