@@ -27,20 +27,20 @@ class ShiftedDeltaClusterer():
         Cluster speech frames by language, based on shifted delta cepstral
         features.  Many clustering algorithms by sklearn are tried.
 
-        AffinityPropagation 
+        AffinityPropagation
             not used, because its time complexity is quadratic in the number
             of samples.
         MeanShift
             idea
                 the mean shift vector is computed for each centroid and points
-                towards a region of the maximum increase in the density 
-            complexity 
+                towards a region of the maximum increase in the density
+            complexity
                 O(T*n*log(n)) in lower dimensions, with n the number of
                 samples and T the number of points. In higher dimensions the
-                complexity will tend towards O(T*n^2).  
-            Scalability can be boosted by using fewer seeds, 
+                complexity will tend towards O(T*n^2).
+            Scalability can be boosted by using fewer seeds,
                 for example by using a higher value of min_bin_freq in the
-                get_bin_seeds function.  
+                get_bin_seeds function.
             Note that the estimate_bandwidth function is much less scalable
                 than the mean shift algorithm and will be the bottleneck if it
                 is used.
@@ -51,37 +51,43 @@ class ShiftedDeltaClusterer():
                 matrix, but is computationally expensive when no connectivity
                 constraints are added between samples: it considers at each
                 step all the possible merges.
+        Birch
+            n_clusters
+                the final clustering step treats the subclusters from the
+                leaves as new samples. By default, this final clustering step
+                is not performed and the subclusters are returned as they are
         TSNE
             perplexity http://lvdmaaten.github.io/tsne/
         """
+        # TODO TSNE
         homes = '/home' if True else '/mnt/store'
         self.wav_dir = os.path.join(homes, 'hlt/Speech/Jewels/wav/')
         self.project_dir = os.path.join(homes,
-                                        'makrai/data/unsorted/speech/jewel')
+                                        'makrai/data/speech/jewel')
         n_comp = 1 # GMM
         self.algos = [
-            ("KMeans++", KMeans(n_clusters=n_clusters, init='k-means++', n_jobs=n_jobs)),
-            ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random', n_jobs=n_jobs)),
+            ("KMeans++", KMeans(n_clusters=n_clusters, init='k-means++',
+                                n_jobs=n_jobs)),
+            ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random',
+                                   n_jobs=n_jobs)),
             # TODO try preprocessing by PCA before KMeans
-            ("MeanShift", MeanShift(n_jobs=n_jobs, bandwidth=56.3255)), 
+            ("MeanShift", MeanShift(n_jobs=n_jobs, bandwidth=56.3255)),
             #   bandwidth estimated from points :16384 TODO
             ("SpectralClustering", SpectralClustering(n_clusters=n_clusters)),
-            # TODO
+            # TODO connectivity matrix
             #   ("AgglomerativeClustering-ward", AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')),
             #   ("AgglomerativeClustering-compl", AgglomerativeClustering(n_clusters=n_clusters, linkage='complete')),
             #   ("AgglomerativeClustering-avg", AgglomerativeClustering(n_clusters=n_clusters, linkage='average')),
             ("DBSCAN", DBSCAN()),
-            #   algorithm : {'auto', 'ball_tree', 'kd_tree', 'brute'}, optional
-            #       The algorithm to be used to find nearest neighbors
-            #   has no attribute 'predict but has fit_predict
-            ("GMM-spherical", GMM(n_components=n_comp, covariance_type='spherical')),
+            #   algorithm : {'auto', 'ball_tree', 'kd_tree', 'brute'},
+            #       optional, the algorithm to be used to find nearest neighbors
+            ("GMM-spherical", GMM(n_components=n_comp,
+                                  covariance_type='spherical')),
             ("GMM-tied", GMM(n_components=n_comp, covariance_type='tied')),
             ("GMM-diag", GMM(n_components=n_comp, covariance_type='diag')),
             ("GMM-full", GMM(n_components=n_comp, covariance_type='full')),
-            # ("Birch", Birch(n_clusters=n_clusters)), # TODO
-            #   n_clusters kell neki?
-            #   MemoryError
-            #("TSNE", TSNE())
+            ("Birch", Birch()), # MemoryError
+            ("TSNE", TSNE())
         ]
 
     def get_sdc_all_tracks(self):
@@ -99,48 +105,55 @@ class ShiftedDeltaClusterer():
 
     def shifted_delta_cepstra(self, wav_fn, delta=1, shift=3, k_conc=3):
         """
-        :param delta: represents the time advance and delay for the delta computation,
-        :param k_conc: is the number of blocks whose delta coefficients are concatenated
-        :param shift: is the time shift between consecutive blocks
+        :param
+            delta: represents the time advance and delay for the sdc
+            k_conc: is the number of blocks whose delta coefficients are concd
+            shift: is the time shift between consecutive blocks
 
-        Shifted delta cepstra are feature vectors created by stacking delta
-        cepstra computed across multiple speech frames.
+        Shifted delta cepstra are feature vectors created by concatenating
+        delta cepstra computed across multiple speech frames.
         See the paper
             PA Torres-Carrasquillo et al (2002)
-            Approaches to language identification using Gaussian mixture models
-                and shifted delta cepstral features.
-
-        len(mfcc) == 39 == 3 * (12 cepstral + 1 energy)
+            Approaches to language identification using
+                Gaussian mixture models and Shifted delta cepstral features.
         """
         (rate,sig) = wav.read(wav_fn)
-        features = mfcc(sig,rate)
-        logger.debug('Cepstral data of shape {} read from {}'.format(
-            features.shape, wav_fn))
+        mfcc_feats = mfcc(sig,rate)
+        # len(mfcc) == 39 == 3 * (12 cepstral + 1 energy)
         # TODO include original cepstra as well?
-        features = features[delta:] - features[:-delta]
-        shifted = np.zeros((features.shape[0]-shift*k_conc, 
-                            k_conc * features.shape[1]))
-        for i in xrange(shifted.shape[0]):
-            shifted[i,:] = features[i:i+k_conc*shift:shift,:].reshape((1,-1))
+        delta_feats = mfcc_feats[delta:] - mfcc_feats[:-delta]
+        output_duration = delta_feats.shape[0] - shift*k_conc
+        shifted = np.zeros((output_duration,
+                            (k_conc + 1) * delta_feats.shape[1]))
+        mfcc_dim = mfcc_feats.shape[1]
+        shifted[:,0:mfcc_dim] = mfcc_feats[:output_duration]
+        for i in xrange(output_duration):
+            shifted[i,mfcc_dim:] = delta_feats[i:i+k_conc*shift:shift,
+                                               :].reshape((1,-1))
+        logger.debug('{} --> {}, {}'.format(mfcc_feats.shape, shifted.shape,
+                                            wav_fn))
         return shifted
 
-    def cluster(self):
+    def assign(self):
         cluster_dir = '{}/cluster'.format(self.project_dir)
         if not os.path.exists(cluster_dir):
             os.mkdir(cluster_dir)
         for algo_name, algo in self.algos:
-            algo_dir = os.path.join(cluster_dir, algo_name)
-            classer = self.get_classer(algo_name, algo, algo_dir)
-            for wav_fn in os.listdir(self.wav_dir):
-                track_to_clust_fn = '{}.npy'.format(
-                    os.path.join(algo_dir, os.path.splitext(wav_fn)[0]))
-                if os.path.isfile(track_to_clust_fn):
-                    continue
-                logger.info('Assigning {} by {}'.format(wav_fn,algo_name))
-                #if hasattr(classer, 'predict')
-                assign = classer.predict(self.shifted_delta_cepstra(
-                    os.path.join(self.wav_dir, wav_fn)))
-                np.savetxt(track_to_clust_fn, assign, fmt='%i')
+            try:
+                algo_dir = os.path.join(cluster_dir, algo_name)
+                classer = self.get_classer(algo_name, algo, algo_dir)
+                for wav_fn in os.listdir(self.wav_dir):
+                    track_to_clust_fn = '{}.npy'.format(
+                        os.path.join(algo_dir, os.path.splitext(wav_fn)[0]))
+                    if os.path.isfile(track_to_clust_fn):
+                        continue
+                    logger.info('Assigning {} by {}'.format(wav_fn,algo_name))
+                    #if hasattr(classer, 'predict'):
+                    assignment = classer.predict(self.shifted_delta_cepstra(
+                        os.path.join(self.wav_dir, wav_fn)))
+                    np.savetxt(track_to_clust_fn, assignment, fmt='%i')
+            except Exception as e:
+                logger.exception(e)
 
     def get_classer(self, algo_name, classer, algo_dir):
         if not os.path.exists(algo_dir):
@@ -151,27 +164,28 @@ class ShiftedDeltaClusterer():
             return pickle.load(open(classer_fn, mode='rb'))
         else:
             logger.info('clustering all speech with {}'.format(algo_name))
-            if False and algo_name == 'MeanShift':
-                len_ = 4
-                while  len_ < self.sdc_all_speech.shape[0]:
-                    logging.info((len_,
-                                  estimate_bandwidth(self.sdc_all_speech[:len_])))
-                    len_ *= 2
-            elif hasattr(classer, 'fit_transform'):
+            if hasattr(classer, 'fit') and hasattr(classer, 'predict'):
+                classer.fit(self.sdc_all_speech)
+            elif hasattr(classer, 'fit_transform'): # TSNE
                 all_speech_trafoed = classer.fit_transform(self.sdc_all_speech)
                 np.save(open(trafoed_fn, mode='wb'), all_speech_trafoed)
-            elif hasattr(classer, 'fit'):
-                classer.fit(self.sdc_all_speech)
-            else:
+            else: # DBSCAN
                 classer.fit_predict(self.sdc_all_speech)
             logger.info(classer.get_params())
             logger.info('dumping classifier')
             pickle.dump(classer, open(classer_fn, mode='wb'))
             return classer
 
+    def loop_estimate_bandwidth():
+        len_ = 4
+        while  len_ < self.sdc_all_speech.shape[0]:
+            logging.info((len_,
+                          estimate_bandwidth(self.sdc_all_speech[:len_])))
+            len_ *= 2 
+
     def main(self):
         self.get_sdc_all_tracks()
-        self.cluster()
+        self.assign()
 
 
 if __name__ == "__main__":
