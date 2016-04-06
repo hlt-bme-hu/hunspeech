@@ -1,4 +1,3 @@
-import sys
 import numpy
 from collections import defaultdict
 import os
@@ -7,6 +6,7 @@ import math
 import scipy.io.wavfile as wav
 import logging
 from collections import Counter
+from argparse import ArgumentParser
 
 dates_pattern = re.compile('.*?transcriber_start="(.*?)" transcriber_end="(.*?)".*?')
 
@@ -93,20 +93,32 @@ def map_annotations_to_integers(frame_count, frames_annotated):
         annotation_array)))
     return annotation_array        
                 
-                
+
+def get_args():
+    parser = ArgumentParser()
+    parser.add_argument('wav_file')
+    parser.add_argument('out_fn')
+    parser.add_argument('-w', '--window_size', type=float, default=0.025)
+    parser.add_argument('-s', '--shift', type=float, default=0.01)
+    parser.add_argument('-a', '--annotations_dir')
+    return parser.parse_args()
+
+
 def main():
     
     import cPickle
     logging.basicConfig(level=logging.INFO)
-    window_size = 0.025
-    shift = 0.01
-    wav_file = sys.argv[1]
-    annotation_dir = sys.argv[2]
+    args = get_args()
+    window_size = args.window_size
+    shift = args.shift
+    wav_file = args.wav_file
+    annotation_dir = args.annotations_dir
     annotation_base_fns = os.listdir(annotation_dir)
     annotations = sorted(['{}/{}'.format(annotation_dir, annotation_base_fn)
     for annotation_base_fn in annotation_base_fns])
-    out_fn = sys.argv[3]
     labels = extract_labels(wav_file, annotations, window_size, shift)
+
+    out_fn = args.out_fn
     fh = open(out_fn, 'w')
     cPickle.dump(labels, fh)
 
