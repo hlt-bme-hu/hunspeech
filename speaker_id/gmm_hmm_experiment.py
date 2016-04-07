@@ -5,7 +5,7 @@ import numpy
 from sklearn.mixture import GMM
 from collections import defaultdict
 from sklearn.metrics import accuracy_score
-from sklearn.metrics.cluster import homogeneity_score
+from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import normalize
 from scipy.stats import describe
 from argparse import ArgumentParser
@@ -80,6 +80,8 @@ def supervised_test(feats, annotation, dumpdir, model):
     logging.info('Predicting...')
     predicted = model.predict(feats)
     logging.info('Accuracy: {}'.format(accuracy_score(predicted, annotation)))
+    logging.info('Confusion matrix: {}'.format(
+        confusion_matrix(predicted, annotation)))
 
 def generate_permutations(predicted, num_labels):
     for p in permutations(range(num_labels)):
@@ -95,10 +97,15 @@ def unsupervised_test(feats, annotation, dumpdir, model):
     predicted = model.predict(feats)
     num_labels = len(set(predicted))
     accuracies = []
+    permutations = []
     logging.info('Counting all permutations and calculating accuracies...')
     for p in generate_permutations(predicted, num_labels):
         accuracies.append(accuracy_score(p, annotation))
+        permutations.append(p)
     logging.info('Results: {}'.format(describe(accuracies)))
+    best_p = permutations[numpy.argmax(accuracies)]
+    logging.info('Confusion matrix of best permutation: {}'.format(
+        confusion_matrix(best_p, annotation)))
 
 def get_args():
     
