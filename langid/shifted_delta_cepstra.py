@@ -71,7 +71,7 @@ class ShiftedDeltaClusterer():
             ("KMeans-rand", KMeans(n_clusters=n_clusters, init='random',
                                    n_jobs=n_jobs)),
             # TODO try preprocessing by PCA before KMeans
-            ("MeanShift", MeanShift(n_jobs=n_jobs, bandwidth=56.3255)),
+            #("MeanShift", MeanShift(n_jobs=n_jobs, bandwidth=56.3255)),
             #   bandwidth estimated from points :16384 TODO
             ("SpectralClustering", SpectralClustering(n_clusters=n_clusters)),
             # TODO connectivity matrix
@@ -130,8 +130,7 @@ class ShiftedDeltaClusterer():
         for i in xrange(output_duration):
             shifted[i,mfcc_dim:] = delta_feats[i:i+k_conc*shift:shift,
                                                :].reshape((1,-1))
-        logger.debug('{} --> {}, {}'.format(mfcc_feats.shape, shifted.shape,
-                                            wav_fn))
+        logger.debug('{} --> {}'.format(mfcc_feats.shape, shifted.shape))
         return shifted
 
     def assign(self):
@@ -163,6 +162,8 @@ class ShiftedDeltaClusterer():
         if os.path.isfile(classer_fn):
             return pickle.load(open(classer_fn, mode='rb'))
         else:
+            if algo_name == 'DBSCAN':
+                self.loop_estimate_bandwidth()
             logger.info('clustering all speech with {}'.format(algo_name))
             if hasattr(classer, 'fit') and hasattr(classer, 'predict'):
                 classer.fit(self.sdc_all_speech)
