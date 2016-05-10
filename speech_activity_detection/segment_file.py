@@ -40,12 +40,12 @@ def segment_and_save_audio(audio_fn, segments, outdir):
     framerate = w.getframerate()
     prev_end = 0
     for i, (start, dur, typ) in enumerate(segments):
-        
+        start = (float(start) /2.75625)
+        dur = (float(dur) /2.75625)
         # for diarization there can be a gap between two interval of interest
         not_needed_frames = int((start - prev_end) * framerate)
         _ = w.readframes(not_needed_frames)
         prev_end = start + dur
-        
         n = (int)(dur * framerate)
         d = w.readframes(n)
         outw = wave.open('{0}/{1}_{2}.wav'.format(outdir, i, typ.lower()), 'w')
@@ -67,11 +67,9 @@ def split_and_join_similar(audio_fn, segments, outdir):
         v.setparams(w.getparams())
     prev_end = 0    
     for i, (start, dur, typ) in enumerate(segments):
-        
         not_needed_frames = int((start - prev_end) * framerate)
         _ = w.readframes(not_needed_frames)
         prev_end = start + dur
-        
         n = (int)(dur * framerate)
         d = w.readframes(n)
         outw[typ.lower()].writeframes(d)
