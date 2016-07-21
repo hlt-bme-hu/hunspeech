@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
@@ -38,7 +38,7 @@ class EMSpeechActicityDetection:
     def convert_to_raw(filename):
         """ accepts mp3, wav and raw files """
         EMSpeechActicityDetection.__check_audio_file(filename)
-        basename, ext = os.path.splittext(filename)
+        basename, ext = os.path.splitext(filename)
         if ext == '.mp3':
             EMSpeechActicityDetection.convert_mp3_to_wav(filename)
         fn = EMSpeechActicityDetection.convert_wav_to_raw('{0}.wav'.format(
@@ -47,14 +47,14 @@ class EMSpeechActicityDetection:
 
     @staticmethod
     def convert_mp3_to_wav(filename):
-        basename, ext = os.path.splittext(filename)
+        basename, ext = os.path.splitext(filename)
         out_fn = '{}.wav'.format(basename)
         subprocess.call('sox {0} {1}'.format(filename, out_fn), shell=True)
         return out_fn
 
     @staticmethod
     def convert_wav_to_raw(filename):
-        basename, ext = os.path.splittext(filename)
+        basename, ext = os.path.splitext(filename)
         out_fn = '{}.raw'.format(basename)
         params = '-r 16k -b 16 -L -c 1'
         subprocess.call('sox {0} {1} {2}'.format(params, filename, out_fn),
@@ -66,8 +66,8 @@ class EMSpeechActicityDetection:
         if not os.path.exists(filename):
             raise Exception('Source file does not exist: {}'.format(
                 filename))
-        ext = os.path.splittext(filename)[-1]
-        if ext not in ('raw', 'mp3', 'wav'):
+        ext = os.path.splitext(filename)[-1]
+        if ext not in ('.raw', '.mp3', '.wav'):
             raise ValueError('Cannot handle [{0}] files'.format(
                 ext))
 
