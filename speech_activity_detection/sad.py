@@ -19,7 +19,7 @@ class EMSpeechActicityDetection:
         if model is None:
             self.model = 'model_name'  # TODO
         else:
-            self.model
+            self.model = model
         self.segment_out = segment_out
         self.binary_path = '{}/shout_segment'.format(shout_path)
 
