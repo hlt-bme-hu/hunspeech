@@ -1,10 +1,8 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2016 Judit Acs <judit@sch.bme.hu>
 #
-# Distributed under terms of the MIT license.
+# Distributed under terms of the GPL license.
 
 from argparse import ArgumentParser
 import os
@@ -12,12 +10,29 @@ import subprocess
 
 
 class EMSpeechActicityDetection:
+    """Speech activity detection and segmentation
+
+    This class is a wrapper for the SHOUT toolkit's SAD module.
+    Since SHOUT expects the input to be raw audio, it is first converted
+    into the correct raw format by sox (Sound eXchange),
+    then shout_segment is called.
+    SHOUT outputs a single segmentation file, which is saved to
+    segments.txt by default.
+    Each segment is labeled as SPEECH, SIL (silence) or SOUND.
+    EMSpeechActicityDetection supports two additional saving solutions:
+        1. segment the input according to SHOUT's segmentation into
+        individual audio files.
+        2. group segments by labels and concatenate them into a single file.
+        This produces at most three files: one containing all speech, one
+        containing all silence and another one containing all sound.
+    """
 
     def __init__(self, filename, model=None, segment_out='segments.txt',
                  segment_dir=None, shout_path=os.environ.get('SHOUT_DIR')):
         self.filename = filename
         if model is None:
-            self.model = 'model_name'  # TODO
+            self.model = os.path.join(os.environ.get('SHOUT_DIR'),
+                                      'models', 'shout.sad')
         else:
             self.model = model
         self.segment_out = segment_out
