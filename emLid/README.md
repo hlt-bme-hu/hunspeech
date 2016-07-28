@@ -35,4 +35,4 @@ released soon.
 
 ## Contact
 
-[Márton Makrai](makrai.marton@nytud.mta.hu)
+Márton Makrai makrai.marton@nytud.mta.hu
