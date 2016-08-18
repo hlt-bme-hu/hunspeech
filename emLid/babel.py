@@ -8,7 +8,7 @@ database = bob.bio.base.database.DatabaseBob(
         # TODO Later replace this first argument by
         # pkg_resources.resource_filename(
         #     'bob.db.hunspeech', 'config/database/hunspeech')
-        '/mnt/store/hlt/Speech/LangPack/bob_list/', # Contains the file lists
+        '/mnt/store/makrai/project/speech/babel/bob_list/', # Contains the file lists
         original_directory = '/mnt/store/hlt/Language',
         original_extension = ".wav",),
     name = "babel",
