@@ -9,7 +9,7 @@ database = bob.bio.base.database.DatabaseBob(
         # pkg_resources.resource_filename(
         #     'bob.db.hunspeech', 'config/database/hunspeech')
         '/mnt/store/makrai/project/speech/babel/bob_list/', # Contains the file lists
-        original_directory = '/mnt/store/hlt/Language',
+        original_directory = '/mnt/store/hlt/Speech/LangPack',
         original_extension = ".wav",),
     name = "babel",
     protocol = '', # There is only a single protocol
