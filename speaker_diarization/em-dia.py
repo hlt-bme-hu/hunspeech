@@ -69,9 +69,12 @@ class EmDiarizer:
 
 def get_args():
 
-    p = ArgumentParser(description='Python wrapper for the speaker diarization module' +\
-            ' of the "SHoUT" speech recognition toolkit (by Marijn Huijbregts), with' +\
-            ' added audio conversion (using SoX -Sound eXchange- utility)',
+    p = ArgumentParser(description=
+                       '''
+                       Python wrapper for the speaker diarization module of the "SHoUT" speech
+                       recognition toolkit (by Marijn Huijbregts), 
+                       with added audio conversion (using SoX -Sound eXchange- utility)
+                       ''',
                        formatter_class=RawTextHelpFormatter)
     p.add_argument('input_fn',
                    help='''
