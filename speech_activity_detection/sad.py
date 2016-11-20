@@ -91,7 +91,7 @@ def parse_args():
     p = ArgumentParser()
     p.add_argument('-i', '--input', type=str,
                    help='Input file. Use this option if you want to segment'
-                   'a single file'
+                   ' a single file'
                    )
     p.add_argument('-m', '--model', type=str,
                    help='SHOUT acoustic model',
