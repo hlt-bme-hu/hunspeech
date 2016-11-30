@@ -1,6 +1,6 @@
 # EMSpeech
 
-EMSpeech is the speech module of the [e-magyar project](http://e-magyar.hu/).
+EMSpeech is the speech module of the [e-magyar](http://e-magyar.hu/) language processing system.
 
 ## Speech activity detection (EMSad)
 
