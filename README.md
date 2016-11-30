@@ -2,7 +2,7 @@
 
 emSpeech is the speech module of the [e-magyar](http://e-magyar.hu/) language processing system.
 
-## Speech activity detection (EMSad)
+## Speech activity detection (emSad)
 
 The speech activity detection module wraps the [SHOUT](http://shout-toolkit.sourceforge.net/).
 
