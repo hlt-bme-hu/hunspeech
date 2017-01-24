@@ -6,7 +6,17 @@ emSpeech is the speech module of the [e-magyar](http://e-magyar.hu/) language pr
 
 The speech activity detection module wraps the [SHOUT](http://shout-toolkit.sourceforge.net/).
 
-### Installation
+## Speaker diarization (emDia)
+
+The speaker diarization module wraps the 'shout_segment' and 'shout_cluster' programs of
+[SHOUT](http://shout-toolkit.sourceforge.net/), with added audio conversion using the
+SoX (Sound eXchange) utility.
+For details on the usage run
+~~~
+python speaker_diarization/em-dia.py --help
+~~~
+
+## Installation
 
 1. Install SHOUT. Instructions can be found [here](http://shout-toolkit.sourceforge.net/download.html).
 1. Install sox. sox should be available on most Linux distribution (e.g. `apt-get install sox`).
